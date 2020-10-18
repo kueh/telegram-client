@@ -1,13 +1,15 @@
-
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate lazy_static;
 
-mod rtd;
+
 mod handler;
+mod rtd;
+mod observer;
 mod tip;
 
 pub mod api;
 pub mod client;
-pub mod listener;
 pub mod errors;
-
+pub mod listener;

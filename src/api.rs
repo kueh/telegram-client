@@ -1,10 +1,15 @@
 use core::borrow::Borrow;
-use std::sync::Arc;
+use std::sync::{Arc, PoisonError, RwLock, RwLockWriteGuard};
 
+use crate::rtd::TdRecv;
+use crate::observer;
 use regex::Regex;
 use rtdlib::errors::*;
-use rtdlib::Tdlib;
 use rtdlib::types::*;
+use rtdlib::Tdlib;
+use std::collections::HashMap;
+use futures::StreamExt;
+use std::borrow::BorrowMut;
 
 #[derive(Debug, Clone)]
 pub struct ApiBuilder {
@@ -42,6 +47,10 @@ impl ApiBuilder {
   }
 }
 
+#[derive(Debug, Clone)]
+pub enum TdType {
+    Chat(Chat),
+}
 
 #[derive(Debug, Clone)]
 pub struct Api {
@@ -572,7 +581,21 @@ impl Api {
     self.send(get_chat.as_ref())
   }
 
-  pub fn get_chat_administrators<C: AsRef<GetChatAdministrators>>(&self, get_chat_administrators: C) -> RTDResult<()> {
+    pub async fn get_chat_async<C: AsRef<GetChat>>(&self, get_chat: C) -> RTDResult<Chat> {
+      let mut rec = observer::subscribe(get_chat.as_ref().extra().to_string());
+      self.send(get_chat.as_ref());
+      let chat = rec.next().await.unwrap();
+      observer::unsubscribe(get_chat.as_ref().extra());
+      match chat {
+        TdType::Chat(chat) => {Ok(chat)}
+        _ => {Err(RTDError::Custom("invalid type"))}
+      }
+    }
+
+  pub fn get_chat_administrators<C: AsRef<GetChatAdministrators>>(
+      &self,
+      get_chat_administrators: C,
+  ) -> RTDResult<()> {
     self.send(get_chat_administrators.as_ref())
   }
 
