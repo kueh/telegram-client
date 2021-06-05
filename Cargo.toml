@@ -45,4 +45,5 @@ toolkit = "0.1"
 
 tokio = {version = "0.3.0", features = ["full"]}
 
-
+[build-dependencies]
+cmake = "0.1.45"
